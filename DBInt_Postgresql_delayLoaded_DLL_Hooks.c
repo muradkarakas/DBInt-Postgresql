@@ -1,4 +1,5 @@
-#include "stdafx.h"
+#include "pch.h"
+
 #include "DBInt_Postgresql_delayLoaded_DLL_Hooks.h"
 
 FARPROC WINAPI delayedDllFailHook(unsigned dliNotify, PDelayLoadInfo pdli) 

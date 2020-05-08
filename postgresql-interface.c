@@ -1,4 +1,4 @@
-#include "stdafx.h"
+#include "pch.h"
 
 #include "..\DBInt\db-interface.h"
 
@@ -59,68 +59,68 @@ postgresqlGetPrimaryKeyColumn(
 	return retval;
 }
 
-POSTGRESQLINTERFACE_API char * postgresqlGetDatabaseName(DBInt_Connection * mkConnection) {
-	PRECHECK(mkConnection);
+POSTGRESQLINTERFACE_API char * postgresqlGetDatabaseName(DBInt_Connection * conn) {
+	PRECHECK(conn);
 	
 	char *retval = NULL;
-	if (mkConnection->connection.postgresqlHandle) {
-		retval = PQdb(mkConnection->connection.postgresqlHandle);
+	if (conn->connection.postgresqlHandle) {
+		retval = PQdb(conn->connection.postgresqlHandle);
 		if (retval) {
-			retval = mkStrdup(mkConnection->heapHandle, retval, __FILE__, __LINE__);
+			retval = mkStrdup(conn->heapHandle, retval, __FILE__, __LINE__);
 		}
 	}
 
-	POSTCHECK(mkConnection);
+	POSTCHECK(conn);
 	return retval;
 }
 
-POSTGRESQLINTERFACE_API BOOL postgresqlRollback(DBInt_Connection *mkConnection) {
-	PRECHECK(mkConnection);
+POSTGRESQLINTERFACE_API BOOL postgresqlRollback(DBInt_Connection *conn) {
+	PRECHECK(conn);
 
-	mkConnection->errText = NULL;
-	PGresult *res = PQexec(mkConnection->connection.postgresqlHandle, "rollback");
+	conn->errText = NULL;
+	PGresult *res = PQexec(conn->connection.postgresqlHandle, "rollback");
 	if (PQresultStatus(res) != PGRES_COMMAND_OK) {
-		mkConnection->errText = PQerrorMessage(mkConnection->connection.postgresqlHandle);
+		conn->errText = PQerrorMessage(conn->connection.postgresqlHandle);
 	}
 	PQclear(res);
 	
 	// starting a new transaction
-	if (mkConnection->errText == NULL) {
-		beginNewTransaction(mkConnection);
+	if (conn->errText == NULL) {
+		beginNewTransaction(conn);
 	}
-	POSTCHECK(mkConnection);
+	POSTCHECK(conn);
 	// on success returns true
-	return (mkConnection->errText != NULL);
+	return (conn->errText != NULL);
 }
 
-POSTGRESQLINTERFACE_API BOOL postgresqlCommit(DBInt_Connection *mkConnection) {
-	PRECHECK(mkConnection);
+POSTGRESQLINTERFACE_API BOOL postgresqlCommit(DBInt_Connection *conn) {
+	PRECHECK(conn);
 
-	mkConnection->errText = NULL;
-	PGresult *res = PQexec(mkConnection->connection.postgresqlHandle, "commit");
+	conn->errText = NULL;
+	PGresult *res = PQexec(conn->connection.postgresqlHandle, "commit");
 	if (PQresultStatus(res) != PGRES_COMMAND_OK) {
-		mkConnection->errText = PQerrorMessage(mkConnection->connection.postgresqlHandle);
+		conn->errText = PQerrorMessage(conn->connection.postgresqlHandle);
 	}
 	PQclear(res);
 	
 	// starting a new transaction
-	if (mkConnection->errText == NULL) {
-		beginNewTransaction(mkConnection);
+	if (conn->errText == NULL) {
+		beginNewTransaction(conn);
 	}
-	POSTCHECK(mkConnection);
+	POSTCHECK(conn);
 	// on success returns true
-	return (mkConnection->errText != NULL);
+	return (conn->errText != NULL);
 }
 
-POSTGRESQLINTERFACE_API void postgresqlInitConnection(DBInt_Connection * mkConnection) {
-	PRECHECK(mkConnection);
+POSTGRESQLINTERFACE_API void postgresqlInitConnection(DBInt_Connection * conn) {
+	PRECHECK(conn);
 
-	int ret = PQsetClientEncoding(mkConnection->connection.postgresqlHandle, "UNICODE");
+	int ret = PQsetClientEncoding(conn->connection.postgresqlHandle, "UNICODE");
 	if (ret != 0) {
-		mkConnection->errText = PQerrorMessage(mkConnection->connection.postgresqlHandle);
+		conn->errText = PQerrorMessage(conn->connection.postgresqlHandle);
 	}
 
-	POSTCHECK(mkConnection);
+	POSTCHECK(conn);
 }
 
 
@@ -135,59 +135,59 @@ postgresqlCreateConnection(
 	const char * password
 )
 {
-	DBInt_Connection *mkConnection = (DBInt_Connection *)mkMalloc(heapHandle, sizeof(DBInt_Connection), __FILE__, __LINE__);
-	mkConnection->dbType = SODIUM_POSTGRESQL_SUPPORT;
-	mkConnection->errText = NULL;
-	mkConnection->heapHandle = heapHandle;
-	mkConnection->err = FALSE;
+	DBInt_Connection *conn = (DBInt_Connection *)mkMalloc(heapHandle, sizeof(DBInt_Connection), __FILE__, __LINE__);
+	conn->dbType = SODIUM_POSTGRESQL_SUPPORT;
+	conn->errText = NULL;
+	conn->heapHandle = heapHandle;
+	conn->err = FALSE;
 
-	strcpy_s(mkConnection->hostName, HOST_NAME_LENGTH, hostName);
+	strcpy_s(conn->hostName, HOST_NAME_LENGTH, hostName);
 
 	if (IsPostgreSqLClientDriverLoaded == TRUE)
 	{
-		char* conninfo = mkStrcat(heapHandle, __FILE__, __LINE__, "host=", mkConnection->hostName, " dbname=", dbName, " user=", userName, " password=", password, NULL);
-		PGconn* conn = PQconnectdb(conninfo);
+		char* conninfo = mkStrcat(heapHandle, __FILE__, __LINE__, "host=", conn->hostName, " dbname=", dbName, " user=", userName, " password=", password, NULL);
+		PGconn* pgConn = PQconnectdb(conninfo);
 		/* Check to see that the backend connection was successfully made */
-		if (PQstatus(conn) != CONNECTION_OK) {
-			mkConnection->err = TRUE;
-			mkConnection->errText = PQerrorMessage(conn);
+		if (PQstatus(pgConn) != CONNECTION_OK) {
+			conn->err = TRUE;
+			conn->errText = PQerrorMessage(pgConn);
 		}
 		else {
-			mkConnection->connection.postgresqlHandle = conn;
+			conn->connection.postgresqlHandle = pgConn;
 			// starting a new transaction
-			beginNewTransaction(mkConnection);
+			beginNewTransaction(conn);
 		}
 
 		mkFree(heapHandle, conninfo);
 	}
 	else 
 	{
-		mkConnection->err = TRUE;
-		mkConnection->errText = "PostgreSql client driver not loaded";
+		conn->err = TRUE;
+		conn->errText = "PostgreSql client driver not loaded";
 	}
 	
-	return mkConnection;
+	return conn;
 }
 
-POSTGRESQLINTERFACE_API void	postgresqlFreeStatement(DBInt_Connection *mkConnection, DBInt_Statement *stm) {
-	PRECHECK(mkConnection);
+POSTGRESQLINTERFACE_API void	postgresqlFreeStatement(DBInt_Connection *conn, DBInt_Statement *stm) {
+	PRECHECK(conn);
 
-	if (stm == NULL || mkConnection == NULL) {
+	if (stm == NULL || conn == NULL) {
 		return;
 	}
 	
 	if (stm->statement.postgresql.bindVariableCount > 0) {
 		// Time to free all arrays
-		mkFree(mkConnection->heapHandle, stm->statement.postgresql.bindVariables);
+		mkFree(conn->heapHandle, stm->statement.postgresql.bindVariables);
 		stm->statement.postgresql.bindVariables = NULL;
 
-		mkFree(mkConnection->heapHandle, stm->statement.postgresql.paramTypes);
+		mkFree(conn->heapHandle, stm->statement.postgresql.paramTypes);
 		stm->statement.postgresql.paramTypes = NULL;
 
-		mkFree(mkConnection->heapHandle, stm->statement.postgresql.paramFormats);
+		mkFree(conn->heapHandle, stm->statement.postgresql.paramFormats);
 		stm->statement.postgresql.paramFormats = NULL;
 
-		mkFree(mkConnection->heapHandle, stm->statement.postgresql.paramSizes);
+		mkFree(conn->heapHandle, stm->statement.postgresql.paramSizes);
 		stm->statement.postgresql.paramSizes = NULL;
 
 		stm->statement.postgresql.bindVariableCount = 0;
@@ -196,51 +196,51 @@ POSTGRESQLINTERFACE_API void	postgresqlFreeStatement(DBInt_Connection *mkConnect
 		PQclear(stm->statement.postgresql.resultSet);
 		stm->statement.postgresql.resultSet = NULL;
 	}
-	mkFree(mkConnection->heapHandle, stm);
+	mkFree(conn->heapHandle, stm);
 }
 
-POSTGRESQLINTERFACE_API void postgresqlDestroyConnection(DBInt_Connection *mkConnection) {
-	PRECHECK(mkConnection);
+POSTGRESQLINTERFACE_API void postgresqlDestroyConnection(DBInt_Connection *conn) {
+	PRECHECK(conn);
 
-	if (mkConnection) {
+	if (conn) {
 		/* close the connection to the database and cleanup */
-		PQfinish(mkConnection->connection.postgresqlHandle);
-		mkConnection->connection.postgresqlHandle = NULL;
+		PQfinish(conn->connection.postgresqlHandle);
+		conn->connection.postgresqlHandle = NULL;
 	}
 }
 
-POSTGRESQLINTERFACE_API void postgresqlBindLob(DBInt_Connection *mkConnection, DBInt_Statement *stm, const char *imageFileName, char *bindVariableName) {
-	PRECHECK(mkConnection);
+POSTGRESQLINTERFACE_API void postgresqlBindLob(DBInt_Connection *conn, DBInt_Statement *stm, const char *imageFileName, char *bindVariableName) {
+	PRECHECK(conn);
 
-	if (mkConnection == NULL || imageFileName == NULL) {
-		mkConnection->errText = "Function parameter(s) incorrect";
+	if (conn == NULL || imageFileName == NULL) {
+		conn->errText = "Function parameter(s) incorrect";
 	}
 
-	mkConnection->errText = NULL;
+	conn->errText = NULL;
 
 	// Import file content as large object
-	Oid oid = writeLobContent(mkConnection, imageFileName);
+	Oid oid = writeLobContent(conn, imageFileName);
 	if (oid > 0) {
 		// success. Adding it into bind parameter list
-		char oidStr[15];// = (char*)mkMalloc(mkConnection->heapHandle, 15, __FILE__, __LINE__);
+		char oidStr[15];// = (char*)mkMalloc(conn->heapHandle, 15, __FILE__, __LINE__);
 		//mkItoa(oid, );
 		sprintf_s(oidStr, 15, "%d", oid);
-		postgresqlAddNewParamEntry(mkConnection, stm, bindVariableName, 0, 0, oidStr, strlen(oidStr));
-		//mkFree(mkConnection->heapHandle, oidStr);
+		postgresqlAddNewParamEntry(conn, stm, bindVariableName, 0, 0, oidStr, strlen(oidStr));
+		//mkFree(conn->heapHandle, oidStr);
 	}
 	else {
-		mkConnection->errText = "Bind is unsuccessful";
-		postgresqlAddNewParamEntry(mkConnection, stm, bindVariableName, 0, 0, "-1", 2);
+		conn->errText = "Bind is unsuccessful";
+		postgresqlAddNewParamEntry(conn, stm, bindVariableName, 0, 0, "-1", 2);
 	}
-	POSTCHECK(mkConnection);
+	POSTCHECK(conn);
 }
 
-POSTGRESQLINTERFACE_API void *postgresqlGetLob(DBInt_Connection * mkConnection, DBInt_Statement *stm, const char *columnName, DWORD *sizeOfValue) {
-	PRECHECK(mkConnection);
+POSTGRESQLINTERFACE_API void *postgresqlGetLob(DBInt_Connection * conn, DBInt_Statement *stm, const char *columnName, DWORD *sizeOfValue) {
+	PRECHECK(conn);
 
 	void *retVal = NULL;
-	mkConnection->errText = NULL;
-	HTSQL_COLUMN_TYPE colType = postgresqlGetColumnType(mkConnection, stm, columnName);
+	conn->errText = NULL;
+	SODIUM_DATABASE_COLUMN_TYPE  colType = postgresqlGetColumnType(conn, stm, columnName);
 
 	// OID can be stored in INTEGER column
 	if (colType == HTSQL_COLUMN_TYPE_NUMBER) {
@@ -256,7 +256,7 @@ POSTGRESQLINTERFACE_API void *postgresqlGetLob(DBInt_Connection * mkConnection, 
 				// getting actual blob content
 				Oid lobId = atoi(lobOid);
 				if (lobId != InvalidOid) {
-					retVal = getLobContent(mkConnection, lobId, sizeOfValue);
+					retVal = getLobContent(conn, lobId, sizeOfValue);
 				}
 			}
 
@@ -265,32 +265,32 @@ POSTGRESQLINTERFACE_API void *postgresqlGetLob(DBInt_Connection * mkConnection, 
 	}
 	else if (colType == HTSQL_COLUMN_TYPE_LOB) {
 
-		*sizeOfValue = postgresqlGetColumnSize(mkConnection, stm, columnName);
-		const void *a = postgresqlGetColumnValueByColumnName(mkConnection, stm, columnName);
+		*sizeOfValue = postgresqlGetColumnSize(conn, stm, columnName);
+		const void *a = postgresqlGetColumnValueByColumnName(conn, stm, columnName);
 		return (void*)a;
 
 	} else {
-		mkConnection->errText = "Not a lob. Use appropriate function for that column or change the type of column to integer";
+		conn->errText = "Not a lob. Use appropriate function for that column or change the type of column to integer";
 		return NULL;
 	}
-	POSTCHECK(mkConnection);
+	POSTCHECK(conn);
 }
 
-POSTGRESQLINTERFACE_API char *postgresqlExecuteInsertStatement(DBInt_Connection * mkConnection, DBInt_Statement *stm, const char *sql) {
-	PRECHECK(mkConnection);
+POSTGRESQLINTERFACE_API char *postgresqlExecuteInsertStatement(DBInt_Connection * conn, DBInt_Statement *stm, const char *sql) {
+	PRECHECK(conn);
 
 	PGresult   *res = NULL;
 	size_t	sizeOfRetval = 15;
-	char *retval = mkMalloc(mkConnection->heapHandle, sizeOfRetval, __FILE__, __LINE__);
+	char *retval = mkMalloc(conn->heapHandle, sizeOfRetval, __FILE__, __LINE__);
 	mkItoa(0, retval);
 
-	mkConnection->errText = NULL;
+	conn->errText = NULL;
 
 	if (stm->statement.postgresql.bindVariableCount == 0) {
 		// "insert" statement has no bind variables
-		res = PQexec(mkConnection->connection.postgresqlHandle, sql);
+		res = PQexec(conn->connection.postgresqlHandle, sql);
 		if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-			mkConnection->errText = PQerrorMessage(mkConnection->connection.postgresqlHandle);
+			conn->errText = PQerrorMessage(conn->connection.postgresqlHandle);
 			PQclear(res);
 		}
 		else {
@@ -298,12 +298,12 @@ POSTGRESQLINTERFACE_API char *postgresqlExecuteInsertStatement(DBInt_Connection 
 			stm->statement.postgresql.resultSet = res;
 			char *rowCountAffected = PQcmdTuples(res);
 			strcpy_s(retval, sizeOfRetval, rowCountAffected);
-			//retval = postgresqlGetColumnValueByColumnName(mkConnection, stm, "oid");
+			//retval = postgresqlGetColumnValueByColumnName(conn, stm, "oid");
 		}
 	}
 	else {
 		// "insert" statement has bind variables
-		res = PQexecParams(mkConnection->connection.postgresqlHandle,
+		res = PQexecParams(conn->connection.postgresqlHandle,
 								sql,
 								stm->statement.postgresql.bindVariableCount,
 								stm->statement.postgresql.paramTypes,
@@ -313,7 +313,7 @@ POSTGRESQLINTERFACE_API char *postgresqlExecuteInsertStatement(DBInt_Connection 
 								0);
 		ExecStatusType statusType = PQresultStatus(res);
 		if (statusType != PGRES_TUPLES_OK && statusType != PGRES_COMMAND_OK) {
-			mkConnection->errText = PQerrorMessage(mkConnection->connection.postgresqlHandle);
+			conn->errText = PQerrorMessage(conn->connection.postgresqlHandle);
 			PQclear(res);
 		}
 		else {
@@ -321,30 +321,30 @@ POSTGRESQLINTERFACE_API char *postgresqlExecuteInsertStatement(DBInt_Connection 
 			stm->statement.postgresql.resultSet = res;
 			char* rowCountAffected = PQcmdTuples(res);
 			strcpy_s(retval, sizeOfRetval, rowCountAffected);
-			//retval = postgresqlGetColumnValueByColumnName(mkConnection, stm, "oid");
+			//retval = postgresqlGetColumnValueByColumnName(conn, stm, "oid");
 		}
 	}
 
-	POSTCHECK(mkConnection);
+	POSTCHECK(conn);
 	return retval;
 }
 
-POSTGRESQLINTERFACE_API void postgresqlExecuteUpdateStatement(DBInt_Connection * mkConnection, DBInt_Statement *stm, const char *sql) {
-	PRECHECK(mkConnection);
+POSTGRESQLINTERFACE_API void postgresqlExecuteUpdateStatement(DBInt_Connection * conn, DBInt_Statement *stm, const char *sql) {
+	PRECHECK(conn);
 
 	PGresult   *res = NULL;
-	mkConnection->errText = NULL;
+	conn->errText = NULL;
 
 	if (stm->statement.postgresql.bindVariableCount == 0) {
 		// "update" statement has no bind variables
-		res = PQexec(mkConnection->connection.postgresqlHandle, sql);
+		res = PQexec(conn->connection.postgresqlHandle, sql);
 		if (PQresultStatus(res) != PGRES_COMMAND_OK) {
-			mkConnection->errText = PQerrorMessage(mkConnection->connection.postgresqlHandle);
+			conn->errText = PQerrorMessage(conn->connection.postgresqlHandle);
 		}
 	}
 	else {
 		// "update" statement has bind variables
-		res = PQexecParams(mkConnection->connection.postgresqlHandle,
+		res = PQexecParams(conn->connection.postgresqlHandle,
 			sql,
 			stm->statement.postgresql.bindVariableCount,
 			stm->statement.postgresql.paramTypes,
@@ -353,7 +353,7 @@ POSTGRESQLINTERFACE_API void postgresqlExecuteUpdateStatement(DBInt_Connection *
 			stm->statement.postgresql.paramFormats,
 			0);
 		if (PQresultStatus(res) != PGRES_COMMAND_OK) {
-			mkConnection->errText = PQerrorMessage(mkConnection->connection.postgresqlHandle);
+			conn->errText = PQerrorMessage(conn->connection.postgresqlHandle);
 		}
 		else {
 			stm->statement.postgresql.currentRowNum = 0;
@@ -364,14 +364,14 @@ POSTGRESQLINTERFACE_API void postgresqlExecuteUpdateStatement(DBInt_Connection *
 	stm->statement.postgresql.currentRowNum = 0;
 	stm->statement.postgresql.resultSet = NULL;
 
-	POSTCHECK(mkConnection);
+	POSTCHECK(conn);
 }
 
-POSTGRESQLINTERFACE_API void postgresqlBindString(DBInt_Connection *mkConnection, DBInt_Statement *stm, char *bindVariableName, char *bindVariableValue, size_t valueLength) {
-	PRECHECK(mkConnection);
+POSTGRESQLINTERFACE_API void postgresqlBindString(DBInt_Connection *conn, DBInt_Statement *stm, char *bindVariableName, char *bindVariableValue, size_t valueLength) {
+	PRECHECK(conn);
 
 	if (bindVariableName && bindVariableValue) {
-		postgresqlAddNewParamEntry(mkConnection,
+		postgresqlAddNewParamEntry(conn,
 			stm,
 			bindVariableName,
 			0 /* 0 means auto detection */,
@@ -380,13 +380,13 @@ POSTGRESQLINTERFACE_API void postgresqlBindString(DBInt_Connection *mkConnection
 			valueLength);
 	}
 
-	POSTCHECK(mkConnection);
+	POSTCHECK(conn);
 }
 
-POSTGRESQLINTERFACE_API DBInt_Statement	*postgresqlCreateStatement(DBInt_Connection *mkConnection) {
-	PRECHECK(mkConnection);
+POSTGRESQLINTERFACE_API DBInt_Statement	*postgresqlCreateStatement(DBInt_Connection *conn) {
+	PRECHECK(conn);
 
-	DBInt_Statement	*retObj = (DBInt_Statement *)mkMalloc(mkConnection->heapHandle, sizeof(DBInt_Statement), __FILE__, __LINE__);
+	DBInt_Statement	*retObj = (DBInt_Statement *)mkMalloc(conn->heapHandle, sizeof(DBInt_Statement), __FILE__, __LINE__);
 	retObj->statement.postgresql.resultSet = NULL;
 	retObj->statement.postgresql.currentRowNum = 0;
 	retObj->statement.postgresql.bindVariableCount = 0;
@@ -394,16 +394,16 @@ POSTGRESQLINTERFACE_API DBInt_Statement	*postgresqlCreateStatement(DBInt_Connect
 	return retObj;
 }
 
-POSTGRESQLINTERFACE_API const char *postgresqlGetColumnNameByIndex(DBInt_Connection *mkConnection, DBInt_Statement *stm, unsigned int index) {
-	PRECHECK(mkConnection);
+POSTGRESQLINTERFACE_API const char *postgresqlGetColumnNameByIndex(DBInt_Connection *conn, DBInt_Statement *stm, unsigned int index) {
+	PRECHECK(conn);
 
 	const char *columnName = NULL;
 	columnName = (const char *) PQfname(stm->statement.postgresql.resultSet, index);
 	return columnName;
 }
 
-POSTGRESQLINTERFACE_API const char *postgresqlGetColumnValueByColumnName(DBInt_Connection * mkConnection, DBInt_Statement *stm, const char *columnName) {
-	PRECHECK(mkConnection);
+POSTGRESQLINTERFACE_API const char *postgresqlGetColumnValueByColumnName(DBInt_Connection * conn, DBInt_Statement *stm, const char *columnName) {
+	PRECHECK(conn);
 	char* retVal = "";
 
 	int colNum = PQfnumber(stm->statement.postgresql.resultSet, columnName);
@@ -422,20 +422,27 @@ POSTGRESQLINTERFACE_API const char *postgresqlGetColumnValueByColumnName(DBInt_C
 }
 
 
-POSTGRESQLINTERFACE_API unsigned int postgresqlGetColumnSize(DBInt_Connection * mkConnection, DBInt_Statement *stm, const char *columnName) {
-	PRECHECK(mkConnection);
+POSTGRESQLINTERFACE_API unsigned int postgresqlGetColumnSize(DBInt_Connection * conn, DBInt_Statement *stm, const char *columnName) {
+	PRECHECK(conn);
 
-	mkConnection->errText = NULL;
+	conn->errText = NULL;
 	int colNum = PQfnumber(stm->statement.postgresql.resultSet, columnName);
 	unsigned int colSize = PQfsize(stm->statement.postgresql.resultSet, colNum);
 	return colSize;
 }
 
-POSTGRESQLINTERFACE_API HTSQL_COLUMN_TYPE	postgresqlGetColumnType(DBInt_Connection * mkConnection, DBInt_Statement *stm, const char *columnName) {
-	PRECHECK(mkConnection);
+POSTGRESQLINTERFACE_API 
+SODIUM_DATABASE_COLUMN_TYPE 
+postgresqlGetColumnType(
+	DBInt_Connection * conn, 
+	DBInt_Statement * stm, 
+	const char * columnName
+)
+{
+	PRECHECK(conn);
 
-	mkConnection->errText = NULL; 
-	HTSQL_COLUMN_TYPE retVal = HTSQL_COLUMN_TYPE_NOTSET;
+	conn->errText = NULL; 
+	SODIUM_DATABASE_COLUMN_TYPE retVal = HTSQL_COLUMN_TYPE_NOTSET;
 	int colNum = PQfnumber(stm->statement.postgresql.resultSet, columnName);
 	Oid ctype = PQftype(stm->statement.postgresql.resultSet, colNum);
 	switch (ctype) {
@@ -467,106 +474,106 @@ POSTGRESQLINTERFACE_API HTSQL_COLUMN_TYPE	postgresqlGetColumnType(DBInt_Connecti
 	return retVal;
 }
 
-POSTGRESQLINTERFACE_API void postgresqlPrepare(DBInt_Connection * mkConnection, DBInt_Statement *stm, const char *sql) {
-	PRECHECK(mkConnection);
+POSTGRESQLINTERFACE_API void postgresqlPrepare(DBInt_Connection * conn, DBInt_Statement *stm, const char *sql) {
+	PRECHECK(conn);
 
-	mkConnection->errText = NULL;
+	conn->errText = NULL;
 }
 
 
-POSTGRESQLINTERFACE_API void postgresqlExecuteDescribe(DBInt_Connection * mkConnection, DBInt_Statement *stm, const char *sql) {
-	PRECHECK(mkConnection); 
+POSTGRESQLINTERFACE_API void postgresqlExecuteDescribe(DBInt_Connection * conn, DBInt_Statement *stm, const char *sql) {
+	PRECHECK(conn); 
 	
-	mkConnection->errText = NULL;
-	PGresult   *res = PQdescribePrepared(mkConnection->connection.postgresqlHandle, sql);
+	conn->errText = NULL;
+	PGresult   *res = PQdescribePrepared(conn->connection.postgresqlHandle, sql);
 	if (PQresultStatus(res) != PGRES_TUPLES_OK)
 	{
-		mkConnection->errText = PQerrorMessage(mkConnection->connection.postgresqlHandle);
+		conn->errText = PQerrorMessage(conn->connection.postgresqlHandle);
 		PQclear(res);
 	}
 	else {
 		stm->statement.postgresql.currentRowNum = 0;
 		stm->statement.postgresql.resultSet = res;
 	}
-	POSTCHECK(mkConnection);
+	POSTCHECK(conn);
 }
 
 
-POSTGRESQLINTERFACE_API void postgresqlExecuteSelectStatement(DBInt_Connection * mkConnection, DBInt_Statement *stm, const char *sql) {
-	PRECHECK(mkConnection);
+POSTGRESQLINTERFACE_API void postgresqlExecuteSelectStatement(DBInt_Connection * conn, DBInt_Statement *stm, const char *sql) {
+	PRECHECK(conn);
 
-	mkConnection->errText = NULL;
-	PGresult   *res = PQexec(mkConnection->connection.postgresqlHandle, sql);
+	conn->errText = NULL;
+	PGresult   *res = PQexec(conn->connection.postgresqlHandle, sql);
 	if (PQresultStatus(res) != PGRES_TUPLES_OK)
 	{
-		mkConnection->errText = PQerrorMessage(mkConnection->connection.postgresqlHandle);
+		conn->errText = PQerrorMessage(conn->connection.postgresqlHandle);
 		PQclear(res);
 	}
 	else {
 		stm->statement.postgresql.currentRowNum = 0;
 		stm->statement.postgresql.resultSet = res;
 	}
-	POSTCHECK(mkConnection);
+	POSTCHECK(conn);
 }
 
-POSTGRESQLINTERFACE_API void postgresqlRegisterString(DBInt_Connection * mkConnection, DBInt_Statement *stm, const char *bindVariableName, int maxLength) {
-	PRECHECK(mkConnection);
-	mkConnection->errText = NULL;
+POSTGRESQLINTERFACE_API void postgresqlRegisterString(DBInt_Connection * conn, DBInt_Statement *stm, const char *bindVariableName, int maxLength) {
+	PRECHECK(conn);
+	conn->errText = NULL;
 }
 
-POSTGRESQLINTERFACE_API void postgresqlExecuteDeleteStatement(DBInt_Connection * mkConnection, DBInt_Statement *stm, const char *sql) {
-	PRECHECK(mkConnection); 
+POSTGRESQLINTERFACE_API void postgresqlExecuteDeleteStatement(DBInt_Connection * conn, DBInt_Statement *stm, const char *sql) {
+	PRECHECK(conn); 
 	
-	mkConnection->errText = NULL;
-	PGresult   *res = PQexec(mkConnection->connection.postgresqlHandle, sql);
+	conn->errText = NULL;
+	PGresult   *res = PQexec(conn->connection.postgresqlHandle, sql);
 	if (PQresultStatus(res) != PGRES_COMMAND_OK) {
-		mkConnection->errText = PQerrorMessage(mkConnection->connection.postgresqlHandle);
+		conn->errText = PQerrorMessage(conn->connection.postgresqlHandle);
 	}
 	PQclear(res);
 	stm->statement.postgresql.resultSet = NULL;
 	stm->statement.postgresql.currentRowNum = 0;
-	POSTCHECK(mkConnection);
+	POSTCHECK(conn);
 }
 
-POSTGRESQLINTERFACE_API void postgresqlExecuteAnonymousBlock(DBInt_Connection * mkConnection, DBInt_Statement *stm, const char *sql) {
-	PRECHECK(mkConnection);
+POSTGRESQLINTERFACE_API void postgresqlExecuteAnonymousBlock(DBInt_Connection * conn, DBInt_Statement *stm, const char *sql) {
+	PRECHECK(conn);
 
-	mkConnection->errText = NULL;
-	PGresult   *res = PQexec(mkConnection->connection.postgresqlHandle, sql);
+	conn->errText = NULL;
+	PGresult   *res = PQexec(conn->connection.postgresqlHandle, sql);
 	if (PQresultStatus(res) != PGRES_COMMAND_OK) {
-		mkConnection->errText = PQerrorMessage(mkConnection->connection.postgresqlHandle);
+		conn->errText = PQerrorMessage(conn->connection.postgresqlHandle);
 	}
 	PQclear(res);
 	stm->statement.postgresql.resultSet = NULL;
 	stm->statement.postgresql.currentRowNum = 0;
-	POSTCHECK(mkConnection);
+	POSTCHECK(conn);
 }
 
-POSTGRESQLINTERFACE_API unsigned int postgresqlGetAffectedRows(DBInt_Connection *mkConnection, DBInt_Statement *stm) {
-	PRECHECK(mkConnection);
+POSTGRESQLINTERFACE_API unsigned int postgresqlGetAffectedRows(DBInt_Connection *conn, DBInt_Statement *stm) {
+	PRECHECK(conn);
 
 	return 0;
 }
 
-POSTGRESQLINTERFACE_API unsigned int postgresqlGetColumnCount(DBInt_Connection *mkConnection, DBInt_Statement *stm) {
-	PRECHECK(mkConnection); 
+POSTGRESQLINTERFACE_API unsigned int postgresqlGetColumnCount(DBInt_Connection *conn, DBInt_Statement *stm) {
+	PRECHECK(conn); 
 	
 	unsigned int colCount = 0;
 	colCount = PQnfields(stm->statement.postgresql.resultSet);
 	return colCount;
 }
 
-POSTGRESQLINTERFACE_API const char *postgresqlGetLastErrorText(DBInt_Connection *mkConnection) {
-	PRECHECK(mkConnection); 
-	return mkConnection->errText;
+POSTGRESQLINTERFACE_API const char *postgresqlGetLastErrorText(DBInt_Connection *conn) {
+	PRECHECK(conn); 
+	return conn->errText;
 }
 
-POSTGRESQLINTERFACE_API int postgresqlGetLastError(DBInt_Connection *mkConnection) {
+POSTGRESQLINTERFACE_API int postgresqlGetLastError(DBInt_Connection *conn) {
 	return 0;
 }
 
-POSTGRESQLINTERFACE_API void postgresqlSeek(DBInt_Connection *mkConnection, DBInt_Statement *stm, int rowNum) {
-	PRECHECK(mkConnection);
+POSTGRESQLINTERFACE_API void postgresqlSeek(DBInt_Connection *conn, DBInt_Statement *stm, int rowNum) {
+	PRECHECK(conn);
 	if (rowNum > 0) {
 		stm->statement.postgresql.currentRowNum = rowNum - 1;
 	} 	
@@ -601,18 +608,18 @@ POSTGRESQLINTERFACE_API int	postgresqlPrev(DBInt_Statement *stm) {
 	return (stm->statement.postgresql.currentRowNum == 0);
 }
 
-POSTGRESQLINTERFACE_API int postgresqlIsConnectionOpen(DBInt_Connection * mkConnection) {
-	PRECHECK(mkConnection);
+POSTGRESQLINTERFACE_API int postgresqlIsConnectionOpen(DBInt_Connection * conn) {
+	PRECHECK(conn);
 
 	BOOL retval = FALSE;
-	mkConnection->errText = NULL;
-	PGresult   *res = PQexec(mkConnection->connection.postgresqlHandle, "");
+	conn->errText = NULL;
+	PGresult   *res = PQexec(conn->connection.postgresqlHandle, "");
 	if (PQresultStatus(res) != PGRES_COMMAND_OK) {
-		mkConnection->errText = PQerrorMessage(mkConnection->connection.postgresqlHandle);
-		retval = (mkConnection->errText == NULL || mkConnection->errText[0] == '\0');
+		conn->errText = PQerrorMessage(conn->connection.postgresqlHandle);
+		retval = (conn->errText == NULL || conn->errText[0] == '\0');
 	}
 	PQclear(res);
-	POSTCHECK(mkConnection);
+	POSTCHECK(conn);
 	return retval;
 }
 

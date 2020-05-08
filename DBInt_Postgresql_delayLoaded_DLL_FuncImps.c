@@ -1,3 +1,5 @@
+#include "pch.h"
+
 #include "DBInt_Postgresql_delayLoaded_DLL_FuncImps.h"
 
 
