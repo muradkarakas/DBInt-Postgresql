@@ -177,6 +177,12 @@ POSTGRESQLINTERFACE_API void	postgresqlFreeStatement(DBInt_Connection *conn, DBI
 	}
 	
 	if (stm->statement.postgresql.bindVariableCount > 0) {
+		for (int paramIndex = 0; paramIndex < stm->statement.postgresql.bindVariableCount; paramIndex++) {
+			if (stm->statement.postgresql.bindVariables[paramIndex]) {
+				mkFree(conn->heapHandle, stm->statement.postgresql.bindVariables[paramIndex]);
+				stm->statement.postgresql.bindVariables[paramIndex] = NULL;
+			}
+		}
 		// Time to free all arrays
 		mkFree(conn->heapHandle, stm->statement.postgresql.bindVariables);
 		stm->statement.postgresql.bindVariables = NULL;

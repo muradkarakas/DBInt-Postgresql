@@ -138,7 +138,11 @@ void postgresqlAddNewParamEntry(DBInt_Connection *mkDBConnection, DBInt_Statemen
 	}
 
 	// Setting values
-	stm->statement.postgresql.bindVariables[stm->statement.postgresql.bindVariableCount] = bindVariableValue;
+	size_t paramValueHolderSize = valueLength + sizeof(char);
+	char* paramValueHolder = mkMalloc(mkDBConnection->heapHandle, paramValueHolderSize, __FILE__, __LINE__);
+	strncpy_s(paramValueHolder, paramValueHolderSize, bindVariableValue, valueLength);
+
+	stm->statement.postgresql.bindVariables[stm->statement.postgresql.bindVariableCount] = paramValueHolder;
 	stm->statement.postgresql.paramTypes[stm->statement.postgresql.bindVariableCount] = bindVariableType;
 	stm->statement.postgresql.paramSizes[stm->statement.postgresql.bindVariableCount] = (int) valueLength;
 	stm->statement.postgresql.paramFormats[stm->statement.postgresql.bindVariableCount] = bindVariableFormat;
