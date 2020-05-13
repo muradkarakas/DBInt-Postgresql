@@ -188,7 +188,7 @@
       <DelayLoadDLLs>libpq.dll;SodiumShared.dll</DelayLoadDLLs>
     </Link>
     <PostBuildEvent>
-      <Command>copy $(ProjectDir)$(Platform)\DBInt-Postgresql.dll C:\projects\Sodium\Setup</Command>
+      <Command>copy $(ProjectDir)$(Platform)\DBInt-Postgresql.dll C:\Sodium\Sodium-Setup</Command>
     </PostBuildEvent>
     <PreBuildEvent>
       <Command>
@@ -267,7 +267,7 @@
       <DelayLoadDLLs>libpq.dll;SodiumShared.dll</DelayLoadDLLs>
     </Link>
     <PostBuildEvent>
-      <Command>copy $(ProjectDir)$(Platform)\DBInt-Postgresql.dll C:\projects\Sodium\Setup</Command>
+      <Command>copy $(ProjectDir)$(Platform)\DBInt-Postgresql.dll C:\Sodium\Sodium-Setup</Command>
     </PostBuildEvent>
     <PreBuildEvent>
       <Command>
