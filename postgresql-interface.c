@@ -24,7 +24,7 @@ postgresqlGetPrimaryKeyColumn(
 
 	mkItoa(position, positionStr);
 
-	DBInt_Statement* ociStatement = postgresqlCreateStatement(mkDBConnection);
+	DBInt_Statement* stm = postgresqlCreateStatement(mkDBConnection);
 
 	char* sql = mkStrcat(mkDBConnection->heapHandle, __FILE__, __LINE__,
 							"SELECT "
@@ -47,11 +47,11 @@ postgresqlGetPrimaryKeyColumn(
 							NULL
 						);
 
-	postgresqlPrepare(mkDBConnection, ociStatement, sql);
+	postgresqlPrepare(mkDBConnection, stm, sql);
 
-	postgresqlExecuteSelectStatement(mkDBConnection, ociStatement, sql);
+	postgresqlExecuteSelectStatement(mkDBConnection, stm, sql);
 
-	const char* tmp = postgresqlGetColumnValueByColumnName(mkDBConnection, ociStatement, "COLUMN_NAME");
+	const char* tmp = postgresqlGetColumnValueByColumnName(mkDBConnection, stm, "COLUMN_NAME");
 
 	if (tmp) {
 		retval = mkStrdup(mkDBConnection->heapHandle, tmp, __FILE__, __LINE__);
