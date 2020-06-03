@@ -131,7 +131,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>C:\Program Files\PostgreSQL\12\include;C:\Program Files\PostgreSQL\12\include\libpq;C:\Program Files\PostgreSQL\10\include;C:\Program Files\PostgreSQL\10\include\libpq;$(IncludePath)</IncludePath>
+    <IncludePath>C:\Program Files\PostgreSQL\12\include;C:\Program Files\PostgreSQL\12\include\libpq;C:\Program Files\PostgreSQL\10\include;C:\Program Files\PostgreSQL\10\include\libpq;E:\Program Files\PostgreSQL\12\include;E:\Program Files\PostgreSQL\12\include\libpq;$(IncludePath)</IncludePath>
     <OutDir>$(ProjectDir)$(Platform)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -145,7 +145,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>C:\Program Files\PostgreSQL\12\include;C:\Program Files\PostgreSQL\12\include\libpq;C:\Program Files\PostgreSQL\10\include;C:\Program Files\PostgreSQL\10\include\libpq;$(IncludePath)</IncludePath>
+    <IncludePath>C:\Program Files\PostgreSQL\12\include;C:\Program Files\PostgreSQL\12\include\libpq;C:\Program Files\PostgreSQL\10\include;C:\Program Files\PostgreSQL\10\include\libpq;E:\Program Files\PostgreSQL\12\include;E:\Program Files\PostgreSQL\12\include\libpq;$(IncludePath)</IncludePath>
     <OutDir>$(ProjectDir)$(Platform)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseForMe|x64'">
@@ -183,7 +183,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>..\SodiumShared\x64;C:\Program Files\PostgreSQL\12\lib;C:\Program Files\PostgreSQL\10\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\SodiumShared\x64;C:\Program Files\PostgreSQL\12\lib;C:\Program Files\PostgreSQL\10\lib;E:\Program Files\PostgreSQL\12\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>SodiumShared.lib;libpq.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <DelayLoadDLLs>libpq.dll;SodiumShared.dll</DelayLoadDLLs>
     </Link>
@@ -262,7 +262,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>..\SodiumShared\x64;C:\Program Files\PostgreSQL\12\lib;C:\Program Files\PostgreSQL\10\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\SodiumShared\x64;C:\Program Files\PostgreSQL\12\lib;C:\Program Files\PostgreSQL\10\lib;E:\Program Files\PostgreSQL\12\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>SodiumShared.lib;libpq.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <DelayLoadDLLs>libpq.dll;SodiumShared.dll</DelayLoadDLLs>
     </Link>
